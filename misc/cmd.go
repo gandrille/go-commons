@@ -16,10 +16,10 @@ func RunCmd(cmd *exec.Cmd, displayName string) result.Result {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return result.Failure(displayName + ": " + err.Error())
+		return result.NewError(displayName + ": " + err.Error())
 	}
 
-	return result.Success(displayName)
+	return result.NewUpdated(displayName)
 }
 
 // RunCmdStdIn executes a command sending an input string to stdin.
@@ -30,11 +30,11 @@ func RunCmdStdIn(commandName, input string, cmd *exec.Cmd) result.Result {
 	cmd.Stderr = os.Stderr
 
 	if err != nil {
-		return result.Failure(commandName + ": can't pipe stdin (" + err.Error() + ")")
+		return result.NewError(commandName + ": can't pipe stdin (" + err.Error() + ")")
 	}
 	err = cmd.Start()
 	if err != nil {
-		return result.Failure(commandName + ": starting error (" + err.Error() + ")")
+		return result.NewError(commandName + ": starting error (" + err.Error() + ")")
 	}
 
 	io.Copy(stdin, bytes.NewBufferString(input))
@@ -42,7 +42,7 @@ func RunCmdStdIn(commandName, input string, cmd *exec.Cmd) result.Result {
 
 	err = cmd.Wait()
 	if err != nil {
-		return result.Failure(commandName + ": failed (" + err.Error() + ")")
+		return result.NewError(commandName + ": failed (" + err.Error() + ")")
 	}
-	return result.Success(commandName)
+	return result.NewUpdated(commandName)
 }

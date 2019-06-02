@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+// IMPORTANT! READ ME FIRST!
+// All the functions in this file are designed for providing nice status messages,
+// NOT for efficiency optimization.
+// Do NOT use this functions if you need performance.
+
 // HomeDir gets the value of HOME environment variable.
 // Exit(1) on failure.
 func HomeDir() string {

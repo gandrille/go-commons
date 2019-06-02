@@ -6,6 +6,11 @@ import (
 	"os/user"
 )
 
+// IMPORTANT! READ ME FIRST!
+// All the functions in this file are designed for providing nice status messages,
+// NOT for efficiency optimization.
+// Do NOT use this functions if you need performance.
+
 // Hostname gets the value of HOSTNAME environment variable.
 // os.Exit(1) on failure.
 func Hostname() string {

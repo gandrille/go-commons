@@ -19,7 +19,7 @@ func NewSet(results []Result, message string) Set {
 // IsSuccess checks if all the results are in success.
 func (results Set) IsSuccess() bool {
 	for _, element := range results.results {
-		if !element.isSuccess {
+		if !element.IsSuccess() {
 			return false
 		}
 	}
@@ -28,7 +28,11 @@ func (results Set) IsSuccess() bool {
 
 // OverallResult gets a result object for the all set.
 func (results Set) OverallResult() Result {
-	return New(results.IsSuccess(), results.Message())
+	if results.IsSuccess() {
+		return NewInfo(results.Message())
+	} else {
+		return NewError(results.Message())
+	}
 }
 
 // IsEmpty checks if the set contains NO result.
@@ -89,6 +93,9 @@ func (results Set) DefaultMessage() string {
 		return fmt.Sprintf("All %s elements executed with error", strconv.Itoa(tot))
 	}
 
+	if failures == 1 {
+		return fmt.Sprintf("%s success, %s failure", strconv.Itoa(success), strconv.Itoa(failures))
+	}
 	return fmt.Sprintf("%s success, %s failures", strconv.Itoa(success), strconv.Itoa(failures))
 }
 
@@ -96,7 +103,7 @@ func (results Set) statistics() (int, int, int) {
 	success := 0
 	failures := 0
 	for _, element := range results.results {
-		if element.isSuccess {
+		if element.IsSuccess() {
 			success++
 		} else {
 			failures++

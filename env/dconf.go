@@ -15,7 +15,17 @@ import (
 // Do NOT use this functions if you need performance.
 
 // dconf is Gnome configuration system
+// WARNING : it has no link with debconf
 // https://developer.gnome.org/dconf/unstable/dconf-overview.html
+
+// ===============================
+// ===============================
+// == TODO migrate to gsettings ==
+// ===============================
+// ===============================
+
+// For modifying the dconf backend storage itself, use the dconf tool; but gsettings should be used by preference.
+// https://developer.gnome.org/GSettings/
 const dconfExe = "/usr/bin/dconf"
 
 // ReadDconfKey reads a dconf key.
@@ -23,14 +33,14 @@ const dconfExe = "/usr/bin/dconf"
 func ReadDconfKey(key string) (string, error) {
 
 	// Check if executable exists
-	if exists, err := filesystem.FileExists(dconfExe); err != nil || exists == false {
+	if exists, err := filesystem.RegularFileExists(dconfExe); err != nil || exists == false {
 		return "", errors.New("File " + dconfExe + " does NOT exist")
 	}
 
 	// Key reading
 	out, err := exec.Command(dconfExe, "read", key).Output()
 	if err != nil {
-		return "", errors.New("Can't read key " + key + " with dconf")
+		return "", errors.New("Can't read key " + key + " using dconf")
 	}
 	value := strings.TrimSuffix(string(out), "\n")
 
@@ -43,27 +53,23 @@ func WriteDconfKey(key, newValue string) result.Result {
 	// Read old value
 	oldValue, err := ReadDconfKey(key)
 	if err != nil {
-		result.Failure(err.Error())
+		result.NewError(err.Error())
 	}
 
 	// Update needed: write new value
 	if oldValue != newValue {
 		if err := exec.Command(dconfExe, "write", key, newValue).Run(); err != nil {
-			result.Failure("Can't write key " + key + " with dconf")
+			result.NewError("Can't write key '" + key + "' with dconf")
 		}
 	}
 
 	// At this point, we have managed to read and write the key
-	// Let's compute the final success message
-	msg := ""
 	switch {
 	case oldValue == "":
-		msg = "Dconf key " + key + " initialized with " + newValue
+		return result.NewCreated("Dconf key '" + key + "' initialized with " + newValue)
 	case oldValue == newValue:
-		msg = "Dconf key " + key + " already has value " + newValue
+		return result.NewUnchanged("Dconf key '" + key + "' already has value " + newValue)
 	default:
-		msg = "Dconf key " + key + " updated from " + oldValue + " to " + newValue
+		return result.NewUpdated("Dconf key '" + key + "' updated from " + oldValue + " to " + newValue)
 	}
-
-	return result.Success(msg)
 }

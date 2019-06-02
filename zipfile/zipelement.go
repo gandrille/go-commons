@@ -7,6 +7,11 @@ import (
 	"github.com/gandrille/go-commons/result"
 )
 
+// IMPORTANT! READ ME FIRST!
+// All the functions in this file are designed for providing nice status messages,
+// NOT for efficiency optimization.
+// Do NOT use this functions if you need performance.
+
 // ZipElement is the in memory representation of a file inside a zip file.
 type ZipElement struct {
 	name    string
@@ -28,7 +33,7 @@ func (element ZipElement) IsValid() bool {
 // Write dumps the content of the element of a zip file to the filesystem.
 func (element ZipElement) Write(filePath string) result.Result {
 	if !element.isValid {
-		return result.Failure(element.name + " has not been loaded corectly")
+		return result.NewError(element.name + " has not been loaded corectly")
 	}
 
 	return filesystem.WriteBinaryFile(filePath, element.content, true)

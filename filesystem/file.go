@@ -20,7 +20,7 @@ import (
 func ReadFileAsBinary(filePath string) ([]byte, error) {
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
-	if exists, err := FileExists(filePath); err != nil || exists == false {
+	if exists, err := RegularFileExists(filePath); err != nil || exists == false {
 		return []byte{}, errors.New("File " + filePath + " does NOT exist")
 	}
 
@@ -40,11 +40,27 @@ func ReadFileAsString(filePath string) (string, error) {
 	return string(byteArray), nil
 }
 
-// FileExists checks if a regular file exists.
+// RegularFileExists checks if a file exists.
+// Returns true if the file exists, false otherwise.
+// error != nil if the file exists.
+// TODO : return value is a bit overcomplicated
+func Exists(filePath string) (bool, error) {
+	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
+
+	if _, err := os.Stat(filePath); err == nil {
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
+// RegularFileExists checks if a regular file exists.
 // Returns true if the file exists and is a regular file, false otherwise.
 // error != nil if the file exists and is not a regular file (ie a directory).
 // TODO : return value is a bit overcomplicated
-func FileExists(filePath string) (bool, error) {
+func RegularFileExists(filePath string) (bool, error) {
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
 	if stat, err := os.Stat(filePath); err == nil {
@@ -94,7 +110,7 @@ func ReadFileAsStringOrEmptyIfNotExists(filePath string) (string, error) {
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
 	// Checks if the file exists
-	if exists, err := FileExists(filePath); err != nil {
+	if exists, err := RegularFileExists(filePath); err != nil {
 		return "", err
 	} else if !exists {
 		return "", nil
@@ -115,35 +131,35 @@ func WriteStringFile(filePath, newContent string, overwrite bool) result.Result 
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
 	// Check if file exists
-	exists, errExists := FileExists(filePath)
+	exists, errExists := RegularFileExists(filePath)
 	if errExists != nil {
-		return result.Failure(errExists.Error())
+		return result.NewError(errExists.Error())
 	}
 
 	// The file does NOT exist
 	if !exists {
 		if err := replaceStringFileContent(filePath, newContent); err != nil {
-			return result.Failure(fileName + " writing error: " + err.Error())
+			return result.NewError(fileName + " writing error: " + err.Error())
 		} else {
-			return result.Success(fileName + " created")
+			return result.NewCreated(fileName + " created")
 		}
 	}
 
 	// The file exists
 	curContent, err := ReadFileAsString(filePath)
 	if err != nil {
-		return result.Failure(fileName + " already exists but we can't read its content: " + err.Error())
+		return result.NewError(fileName + " already exists but we can't read its content: " + err.Error())
 	}
 	if curContent == newContent {
-		return result.Success(fileName + " already has expected content")
+		return result.NewUnchanged(fileName + " already has expected content")
 	}
 	if overwrite {
 		if err := replaceStringFileContent(filePath, newContent); err != nil {
-			return result.Failure("Can't update " + fileName + ": " + err.Error())
+			return result.NewError("Can't update " + fileName + ": " + err.Error())
 		}
-		return result.Success(fileName + " updated")
+		return result.NewUpdated(fileName + " updated")
 	}
-	return result.Success(fileName + " user defined content left unchanged")
+	return result.NewUnchanged(fileName + " user defined content left unchanged")
 }
 
 // WriteBinaryFile creates a file and writes the content of a byte slice into it.
@@ -153,35 +169,35 @@ func WriteBinaryFile(filePath string, newContent []byte, writeIfFileExists bool)
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
 	// Check if file exists
-	exists, errExists := FileExists(filePath)
+	exists, errExists := RegularFileExists(filePath)
 	if errExists != nil {
-		return result.Failure(fileName + " exists but is not a regular file")
+		return result.NewError(fileName + " exists but is not a regular file")
 	}
 
 	// The file does NOT exist
 	if !exists {
 		if err := replaceBinaryFileContent(filePath, newContent); err != nil {
-			return result.Failure(fileName + " writing error: " + err.Error())
+			return result.NewError(fileName + " writing error: " + err.Error())
 		} else {
-			return result.Success(fileName + " created")
+			return result.NewCreated(fileName + " created")
 		}
 	}
 
 	// The file exists
 	curContent, err := ReadFileAsBinary(filePath)
 	if err != nil {
-		return result.Failure(fileName + " already exists but we can't read its content: " + err.Error())
+		return result.NewError(fileName + " already exists but we can't read its content: " + err.Error())
 	}
 	if bytes.Equal(curContent, newContent) {
-		return result.Success(fileName + " already has expected content")
+		return result.NewUnchanged(fileName + " already has expected content")
 	}
 	if writeIfFileExists {
 		if err := replaceBinaryFileContent(filePath, newContent); err != nil {
-			return result.Failure("Can't update " + fileName + ": " + err.Error())
+			return result.NewError("Can't update " + fileName + ": " + err.Error())
 		}
-		return result.Success(fileName + " updated")
+		return result.NewUpdated(fileName + " updated")
 	}
-	return result.Success(fileName + " user defined content left unchanged")
+	return result.NewUnchanged(fileName + " user defined content left unchanged")
 }
 
 func replaceStringFileContent(filePath, newContent string) error {

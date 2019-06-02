@@ -20,7 +20,7 @@ func CreateOrAppendIfNotInFile(filePath, content string) (bool, error) {
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
 	// Checks if the file exists
-	exists, err := FileExists(filePath)
+	exists, err := RegularFileExists(filePath)
 	if err != nil {
 		return false, err
 	}
@@ -57,12 +57,12 @@ func CopyFileWithUpdate(srcFile, dstFile, startwith, replacement string, appendI
 
 	originalSrcContentStr, err1 := ReadFileAsString(srcFile)
 	if err1 != nil {
-		return result.Failure(err1.Error())
+		return result.NewError(err1.Error())
 	}
 
 	originalDstContentStr, err2 := ReadFileAsStringOrEmptyIfNotExists(dstFile)
 	if err2 != nil {
-		return result.Failure(err2.Error())
+		return result.NewError(err2.Error())
 	}
 
 	finalContent := updateLine(originalSrcContentStr, startwith, replacement, appendIfNoMatch)
@@ -70,9 +70,9 @@ func CopyFileWithUpdate(srcFile, dstFile, startwith, replacement string, appendI
 	// Dst file has expected content
 	if originalDstContentStr == finalContent {
 		if originalSrcContentStr == originalDstContentStr {
-			return result.Success("Content of " + dstFile + " is the same as " + srcFile + " and we have no line strating with " + startwith)
+			return result.NewUnchanged("Content of " + dstFile + " is the same as " + srcFile + " and we have no line strating with " + startwith)
 		} else {
-			return result.Success("Content of " + dstFile + " is already the same as " + srcFile + " with lines strating with " + startwith + " updated")
+			return result.NewUnchanged("Content of " + dstFile + " is already the same as " + srcFile + " with lines strating with " + startwith + " updated")
 		}
 	}
 
@@ -81,7 +81,7 @@ func CopyFileWithUpdate(srcFile, dstFile, startwith, replacement string, appendI
 		return res
 	}
 
-	return result.Success("Content of " + dstFile + " written with content from " + srcFile + " with lines strating with " + startwith + " updated")
+	return result.NewUpdated("Content of " + dstFile + " written with content from " + srcFile + " with lines strating with " + startwith + " updated")
 }
 
 // UpdateLineInFile replaces all the lines of filepath which are starting with startwith by replacement.
@@ -90,14 +90,14 @@ func UpdateLineInFile(filePath, startwith, replacement string, appendIfNoMatch b
 
 	originalContent, err1 := ReadFileAsString(filePath)
 	if err1 != nil {
-		return result.Failure(err1.Error())
+		return result.NewError(err1.Error())
 	}
 
 	finalContent := updateLine(originalContent, startwith, replacement, appendIfNoMatch)
 
 	// Nothing to do
 	if originalContent == finalContent {
-		return result.Success(filePath + " lines strating with " + startwith + " already updated")
+		return result.NewUnchanged(filePath + " lines strating with " + startwith + " already updated")
 	}
 
 	// update needed
@@ -105,7 +105,35 @@ func UpdateLineInFile(filePath, startwith, replacement string, appendIfNoMatch b
 		return res
 	}
 
-	return result.Success(filePath + " lines strating with " + startwith + " updated")
+	return result.NewUpdated(filePath + " lines strating with " + startwith + " updated")
+}
+
+// RemoveLineInFile removes all the lines of filepath which are starting with startwith.
+// if fullline == true, an exact match (instead of start with) is required to remove the line.
+func RemoveLineInFile(filePath, startwith string, fullline bool) result.Result {
+
+	originalContent, err1 := ReadFileAsString(filePath)
+	if err1 != nil {
+		return result.NewError(err1.Error())
+	}
+
+	finalContent := removeLine(originalContent, startwith, fullline)
+
+	// Nothing to do
+	if originalContent == finalContent {
+		if fullline {
+			return result.NewUnchanged(filePath + " does NOT have lines equal to " + startwith)
+		} else {
+			return result.NewUnchanged(filePath + " does NOT have lines starting with " + startwith)
+		}
+	}
+
+	// update needed
+	if res := WriteStringFile(filePath, finalContent, true); !res.IsSuccess() {
+		return res
+	}
+
+	return result.NewUpdated(filePath + " lines strating with " + startwith + " updated")
 }
 
 func updateLine(content, startwith, replacement string, appendIfNoMatch bool) string {
@@ -123,7 +151,19 @@ func updateLine(content, startwith, replacement string, appendIfNoMatch bool) st
 		contentSlice = append(contentSlice, replacement)
 	}
 
-	finalContent := strings.Join(contentSlice, "\n")
+	return strings.Join(contentSlice, "\n")
+}
 
-	return finalContent
+func removeLine(content, startwith string, fullline bool) string {
+
+	contentSlice := strings.Split(content, "\n")
+	finalContent := []string{}
+
+	for _, line := range contentSlice {
+		if line != startwith && (!strings.HasPrefix(line, startwith) || fullline) {
+			finalContent = append(finalContent, line)
+		}
+	}
+
+	return strings.Join(finalContent, "\n")
 }

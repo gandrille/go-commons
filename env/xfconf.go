@@ -23,14 +23,14 @@ const xfconfExe = "/usr/bin/xfconf-query"
 func ReadXfconfProperty(channel, property string) (string, error) {
 
 	// Check if executable exists
-	if exists, err := filesystem.FileExists(xfconfExe); err != nil || exists == false {
+	if exists, err := filesystem.RegularFileExists(xfconfExe); err != nil || exists == false {
 		return "", errors.New("File " + xfconfExe + " does NOT exist")
 	}
 
 	// Property reading
 	out, err := exec.Command(xfconfExe, "--channel", channel, "--property", property).Output()
 	if err != nil {
-		return "", errors.New("Can't read property " + property + " with xfconf")
+		return "", errors.New("Can't read property " + property + " using xfconf")
 	}
 	value := strings.TrimSuffix(string(out), "\n")
 
@@ -43,33 +43,36 @@ func SetXfconfProperty(channel, property, newValue string) result.Result {
 	// Read old value
 	oldValue, err := ReadXfconfProperty(channel, property)
 	if err != nil {
-		return result.Failure(err.Error())
+		return result.NewError(err.Error())
 	}
 
 	// Update needed: write new value
 	if oldValue != newValue {
 		if err := exec.Command(xfconfExe, "--channel", channel, "--property", property, "--set", newValue).Run(); err != nil {
-			return result.Failure("Can't write property " + property + " on channel " + channel + " with xconf. Reason : " + err.Error())
+			return result.NewError("Can't write property " + property + " on channel " + channel + " with xconf. Reason : " + err.Error())
 		}
 	}
 
 	// At this point, we have managed to read and write property
 	// Let's compute the final success message
-	msg := ""
 	switch {
 	case oldValue == "":
-		msg = "Xconf property " + property + " on channel " + channel + " initialized with " + newValue
+		return result.NewCreated("Xconf property " + property + " on channel " + channel + " initialized with " + newValue)
 	case oldValue == newValue:
-		msg = "Xconf property " + property + " on channel " + channel + " already has value " + newValue
+		return result.NewUnchanged("Xconf property " + property + " on channel " + channel + " already has value " + newValue)
 	default:
-		msg = "Xconf property " + property + " on channel " + channel + " updated from " + oldValue + " to " + newValue
+		return result.NewUpdated("Xconf property " + property + " on channel " + channel + " updated from " + oldValue + " to " + newValue)
 	}
-
-	return result.Success(msg)
 }
 
 // ListXfconfProperties gives the list of all properties from a given channel.
 func ListXfconfProperties(channel string) ([]string, error) {
+
+	// Check if executable exists
+	if exists, err := filesystem.RegularFileExists(xfconfExe); err != nil || exists == false {
+		return nil, errors.New("File " + xfconfExe + " does NOT exist")
+	}
+
 	out, err := exec.Command(xfconfExe, "--channel", channel, "--list").Output()
 	if err != nil {
 		return []string{}, err
