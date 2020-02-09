@@ -80,13 +80,13 @@ func (result Result) StandardizeMessage(name, value string) Result {
 		return NewUpdated(name + " updated. Value is now " + value)
 	}
 	if result.IsUnchanged() {
-		return NewUnchanged(name + " has value " + value + " (unchanged)")
+		return NewUnchanged(name + " has value " + value)
 	}
 	if result.IsRemoved() {
 		return NewRemoved(name + " has been deleted")
 	}
 	if result.IsRemoved() {
-		return NewInfo(name + " has value " + value + " (info)")
+		return NewInfo(name + " has value " + value)
 	}
 
 	// we want to update the original message
@@ -180,9 +180,11 @@ func (result Result) SetMessage(message string) {
 // Print prints a result.
 func (result Result) Print() {
 	tag := strings.ToUpper("[" + result.status.String() + "]")
+	msg := result.message
+
 	if result.IsSuccess() {
-		fmt.Printf("%s %s\n", green(tag), result.message)
+		fmt.Printf("%s %s\n", green(tag), msg)
 	} else {
-		fmt.Printf("%s %s\n", red(tag), result.message)
+		fmt.Printf("%s %s\n", red(tag), msg)
 	}
 }

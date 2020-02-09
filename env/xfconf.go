@@ -39,16 +39,22 @@ func ReadXfconfProperty(channel, property string) (string, error) {
 
 // SetXfconfProperty sets an Xconf property.
 func SetXfconfProperty(channel, property, newValue string) result.Result {
+	return CreateOrSetXfconfProperty(channel, property, "", newValue)
+}
+
+// CreateOrSetXfconfProperty sets an Xconf property.
+func CreateOrSetXfconfProperty(channel, property, propType, newValue string) result.Result {
 
 	// Read old value
-	oldValue, err := ReadXfconfProperty(channel, property)
-	if err != nil {
-		return result.NewError(err.Error())
-	}
+	oldValue, _ := ReadXfconfProperty(channel, property)
 
-	// Update needed: write new value
+	// Update needed: write new value (in case of reading error, oldValue is empty)
 	if oldValue != newValue {
-		if err := exec.Command(xfconfExe, "--channel", channel, "--property", property, "--set", newValue).Run(); err != nil {
+		params := []string{"--channel", channel, "--property", property, "--create", "--set", newValue}
+		if propType != "" {
+			params = append(params, "--type", propType)
+		}
+		if err := exec.Command(xfconfExe, params...).Run(); err != nil {
 			return result.NewError("Can't write property " + property + " on channel " + channel + " with xconf. Reason : " + err.Error())
 		}
 	}

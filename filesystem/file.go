@@ -40,10 +40,8 @@ func ReadFileAsString(filePath string) (string, error) {
 	return string(byteArray), nil
 }
 
-// RegularFileExists checks if a file exists.
+// Exists checks if a file exists.
 // Returns true if the file exists, false otherwise.
-// error != nil if the file exists.
-// TODO : return value is a bit overcomplicated
 func Exists(filePath string) (bool, error) {
 	filePath = strings.Replace(filePath, "~", HomeDir(), 1)
 
@@ -197,7 +195,7 @@ func WriteBinaryFile(filePath string, newContent []byte, writeIfFileExists bool)
 		}
 		return result.NewUpdated(fileName + " updated")
 	}
-	return result.NewUnchanged(fileName + " user defined content left unchanged")
+	return result.NewUnchanged(fileName + " already has some user defined content")
 }
 
 func replaceStringFileContent(filePath, newContent string) error {

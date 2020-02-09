@@ -19,7 +19,7 @@ import (
 const xdgRead = "/usr/bin/xdg-user-dir"
 const xdgUpdate = "/usr/bin/xdg-user-dirs-update"
 
-// ReadXdgKey
+// ReadXdgDir Reads a XDG folder key
 func ReadXdgDir(key string) (string, error) {
 
 	// Check if executable exists
@@ -36,9 +36,8 @@ func ReadXdgDir(key string) (string, error) {
 	return path, nil
 }
 
-// UpdateXdgDir an XDK key referencing a directory
-// Returns an error in case of failure.
-// Return true if the new value is different than the previous one.
+// UpdateXdgDir Updates the location of an XDG directory
+// It updates the ~/.config/user-dirs.dirs file using XDG executables
 func UpdateXdgDir(key, value string) (bool, error) {
 
 	hostName := Hostname()
@@ -75,8 +74,10 @@ func UpdateXdgDir(key, value string) (bool, error) {
 		if err := os.Remove(src); err != nil {
 			fmt.Println("[WARNING] empty folder " + src + " was NOT removed: " + err.Error())
 		} else {
-			fmt.Println("[INFO] empty folder " + src + " removed")
+			fmt.Println("[UPDATED] empty folder " + src + " removed")
 		}
+	} else {
+		fmt.Println("[WARNING] folder " + src + " was NOT removed because it is not empty")
 	}
 
 	// Create destination if needed

@@ -28,8 +28,8 @@ func FloderContent(folderPath string) ([]string, error) {
 	return fileList, err
 }
 
-// FloderFiles returns the list of regular files inside a subtree.
-func FloderFiles(folderPath string) ([]string, error) {
+// FolderFiles returns the list of regular files inside a subtree.
+func FolderFiles(folderPath string) ([]string, error) {
 	folderPath = strings.Replace(folderPath, "~", HomeDir(), 1)
 	var fileList []string
 
