@@ -16,8 +16,48 @@ import (
 // NOT for efficiency optimization.
 // Do NOT use this functions if you need performance.
 
+const xdgExec = "/usr/bin/xdg-settings"
 const xdgRead = "/usr/bin/xdg-user-dir"
 const xdgUpdate = "/usr/bin/xdg-user-dirs-update"
+
+// ReadXdgSettings Reads an XDG settings
+func ReadXdgSettings(key string) (string, error) {
+
+	// Check if executable exists
+	if exists, err := filesystem.RegularFileExists(xdgExec); err != nil || !exists {
+		return "", errors.New("File " + xdgExec + " does NOT exist")
+	}
+
+	value, err := exec.Command(xdgExec, "get", key).Output()
+	if err != nil {
+		return "", errors.New("Can't retreive xdg-settings for " + key + ": " + err.Error())
+	}
+	result := strings.Trim(string(value), "\n")
+
+	return result, nil
+}
+
+// WriteXdgSettings Updates an XDG property
+func WriteXdgSettings(key, value string) (bool, error) {
+
+	// Read
+	src, errReadXdgKey := ReadXdgSettings(key)
+	if errReadXdgKey != nil {
+		return false, errReadXdgKey
+	}
+
+	// Is update needed ?
+	if src == value {
+		return false, nil
+	}
+
+	// Write new value
+	if err := exec.Command(xdgExec, "set", key, value).Run(); err != nil {
+		return false, errors.New("Can't write xdg value for " + key + ": " + err.Error())
+	}
+
+	return true, nil
+}
 
 // ReadXdgDir Reads a XDG folder key
 func ReadXdgDir(key string) (string, error) {

@@ -53,13 +53,13 @@ func WriteDconfKey(key, newValue string) result.Result {
 	// Read old value
 	oldValue, err := ReadDconfKey(key)
 	if err != nil {
-		result.NewError(err.Error())
+		return result.NewError(err.Error())
 	}
 
 	// Update needed: write new value
 	if oldValue != newValue {
 		if err := exec.Command(dconfExe, "write", key, newValue).Run(); err != nil {
-			result.NewError("Can't write key '" + key + "' with dconf")
+			return result.NewError("Can't write key '" + key + "' with dconf")
 		}
 	}
 
