@@ -52,7 +52,7 @@ func WriteGsettingsKey(schema, key, newValue string) result.Result {
 	// Write new value
 	if oldValue != newValue {
 		if err := exec.Command(gsettingsExe, "set", schema, key, newValue).Run(); err != nil {
-			result.NewError("Can't write key '" + key + "' in schema '" + schema + "' using gsettings")
+			return result.NewError("Can't write key '" + key + "' in schema '" + schema + "' using gsettings")
 		}
 	}
 
